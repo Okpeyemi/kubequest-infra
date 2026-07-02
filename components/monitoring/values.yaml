@@ -34,6 +34,11 @@ alertmanager:
 grafana:
   nodeSelector: {node-role.kubernetes.io/monitoring: ""}
   tolerations: [{key: dedicated, value: monitoring, effect: NoSchedule}]
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      access: proxy
+      url: http://loki.logging.svc.cluster.local:3100
   admin:
     existingSecret: grafana-admin
     userKey: admin-user
