@@ -3,8 +3,13 @@ kind: Ingress
 metadata:
   name: headlamp
   namespace: headlamp
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts: [dashboard.35.181.105.202.nip.io]
+      secretName: headlamp-tls
   rules:
     - host: dashboard.35.181.105.202.nip.io
       http:
