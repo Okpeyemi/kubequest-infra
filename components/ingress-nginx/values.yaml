@@ -1,0 +1,26 @@
+controller:
+  kind: DaemonSet
+  # Le contrôleur écoute directement sur les ports 80/443 du nœud :
+  # Elastic IP -> nginx, sans intermédiaire (pas de LoadBalancer cloud ici)
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+  service:
+    enabled: false
+  publishService:
+    enabled: false
+  # Épinglage sur le nœud dédié : sélecteur + tolérance au taint posé en phase 3
+  nodeSelector:
+    node-role.kubernetes.io/ingress: ""
+  tolerations:
+    - key: dedicated
+      value: ingress
+      effect: NoSchedule
+  ingressClassResource:
+    default: true
+  # Bonne pratique exigée par le sujet, autant commencer tout de suite
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
