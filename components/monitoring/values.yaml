@@ -1,0 +1,66 @@
+# --- Toute la stack vit sur le nœud "monitoring" (nodeSelector + tolération du taint) ---
+
+prometheusOperator:
+  nodeSelector: {node-role.kubernetes.io/monitoring: ""}
+  tolerations: [{key: dedicated, value: monitoring, effect: NoSchedule}]
+
+prometheus:
+  prometheusSpec:
+    nodeSelector: {node-role.kubernetes.io/monitoring: ""}
+    tolerations: [{key: dedicated, value: monitoring, effect: NoSchedule}]
+    retention: 7d
+    retentionSize: 8GB
+    resources:
+      requests: {cpu: 250m, memory: 1Gi}
+      limits: {cpu: "1", memory: 2Gi}
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes: ["ReadWriteOnce"]
+          resources: {requests: {storage: 10Gi}}
+    # Découvrir aussi les ServiceMonitors créés hors de ce chart (nos apps, phase 5)
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+
+alertmanager:
+  alertmanagerSpec:
+    nodeSelector: {node-role.kubernetes.io/monitoring: ""}
+    tolerations: [{key: dedicated, value: monitoring, effect: NoSchedule}]
+    resources:
+      requests: {cpu: 25m, memory: 64Mi}
+      limits: {cpu: 100m, memory: 128Mi}
+
+grafana:
+  nodeSelector: {node-role.kubernetes.io/monitoring: ""}
+  tolerations: [{key: dedicated, value: monitoring, effect: NoSchedule}]
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  persistence:
+    enabled: true
+    storageClassName: local-path
+    size: 2Gi
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts: [grafana.35.181.105.202.nip.io]   # adapte si ton Elastic IP diffère
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+
+kube-state-metrics:
+  nodeSelector: {node-role.kubernetes.io/monitoring: ""}
+  tolerations: [{key: dedicated, value: monitoring, effect: NoSchedule}]
+
+prometheus-node-exporter:
+  # DaemonSet : doit tourner sur TOUS les nœuds, y compris les taintés
+  tolerations: [{operator: Exists}]
+
+# Composants que kubeadm lie à 127.0.0.1 : non scrapables à distance.
+# Désactivés pour garder des cibles 100% vertes (corrigeable plus tard si besoin).
+kubeControllerManager: {enabled: false}
+kubeScheduler: {enabled: false}
+kubeProxy: {enabled: false}
+kubeEtcd: {enabled: false}
